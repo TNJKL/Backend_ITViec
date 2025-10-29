@@ -1,0 +1,107 @@
+-- Bảng users
+CREATE TABLE users (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    full_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    is_active BIT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME,
+    CONSTRAINT CHK_Email CHECK (email LIKE '%@%.%')
+);
+
+-- Bảng roles
+CREATE TABLE roles (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    CONSTRAINT CHK_Name CHECK (name IN ('ROLE_USER', 'ROLE_ADMIN'))
+);
+
+-- Bảng users_roles (bảng trung gian)
+CREATE TABLE users_roles (
+    user_id BIGINT,
+    role_id BIGINT,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+-- Bảng categories
+CREATE TABLE categories (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    is_active BIT NOT NULL DEFAULT 1,
+image_url VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME
+);
+
+-- Bảng products
+CREATE TABLE products (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    stock_quantity INT NOT NULL DEFAULT 0,
+    image_url VARCHAR(255),
+    is_active BIT NOT NULL DEFAULT 1,
+    category_id BIGINT,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- Bảng shopping_carts
+CREATE TABLE shopping_carts (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    user_id BIGINT,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT UQ_UserId UNIQUE (user_id)
+);
+
+-- Bảng cart_items
+CREATE TABLE cart_items (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    cart_id BIGINT,
+    product_id BIGINT,
+    quantity INT NOT NULL,
+    FOREIGN KEY (cart_id) REFERENCES shopping_carts(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Bảng orders
+CREATE TABLE orders (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    user_id BIGINT,
+    order_date DATETIME NOT NULL DEFAULT GETDATE(),
+    status VARCHAR(50) NOT NULL,
+    total_amount DECIMAL(12, 2) NOT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    shipping_address VARCHAR(255) NOT NULL,
+    customer_phone VARCHAR(20) NOT NULL,
+    updated_at DATETIME,
+    updated_by VARCHAR(50),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT CHK_Status CHECK (status IN ('PENDING', 'SHIPPED'))
+);
+
+-- Bảng order_items
+CREATE TABLE order_items (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    order_id BIGINT,
+    product_id BIGINT,
+    quantity INT NOT NULL,
+    price_per_unit DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+
+--insert dữ liệu--
+
+   INSERT INTO users (username, password, email, full_name, phone, is_active, created_at)
+   VALUES ('demo', 'demo', 'demo@email.com', N'Người dùng demo', '0123456789', 1, GETDATE());
