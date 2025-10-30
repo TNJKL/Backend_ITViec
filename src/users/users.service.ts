@@ -137,9 +137,11 @@ async register(user: RegisterUserDto){
    return compareSync(password, hash );
 
   }
-  async update(updateUserDto: UpdateUserDto , user: IUser) {
+  async update(updateUserDto: UpdateUserDto , user: IUser , _id: string) {
+    if (!mongoose.Types.ObjectId.isValid(_id)) 
+      throw new BadRequestException(`Không tìm thấy user`);
       const updated =  await this.userModel.updateOne(
-        {_id: updateUserDto._id},
+        {_id: _id},
          {...updateUserDto,
            updatedBy: {
             _id: user._id,

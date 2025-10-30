@@ -56,10 +56,21 @@ export class UsersController {
   //   return this.usersService.update(updateUserDto, user);
   // }
 
-  @Patch()
+  // @Patch()
+  //  @ResponseMessage("Update a user")
+  //  async update(@Body() updateUserDto: UpdateUserDto, @User() user: IUser) {
+  //    let updatedUser =  await this.usersService.update(updateUserDto, user);
+  //    return updatedUser;
+  //  }
+
+
+  
    @ResponseMessage("Update a user")
-   async update(@Body() updateUserDto: UpdateUserDto, @User() user: IUser) {
-     let updatedUser =  await this.usersService.update(updateUserDto, user);
+   @Patch(':id')
+   async update(@Body() updateUserDto: UpdateUserDto,
+    @User() user: IUser,
+    @Param('id') id: string) {
+     let updatedUser =  await this.usersService.update(updateUserDto, user , id);
      return updatedUser;
    }
   
