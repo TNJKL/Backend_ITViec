@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query } from '@
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateSelfDto } from './dto/update-self.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public, ResponseMessage, User } from 'src/decorator/customize';
 import { IUser } from './users.interface';
 import { ApiTags } from '@nestjs/swagger';
@@ -65,14 +67,27 @@ export class UsersController {
 
 
   
-   @ResponseMessage("Update a user")
-   @Patch(':id')
-   async update(@Body() updateUserDto: UpdateUserDto,
-    @User() user: IUser,
-    @Param('id') id: string) {
-     let updatedUser =  await this.usersService.update(updateUserDto, user , id);
-     return updatedUser;
-   }
+  @ResponseMessage("Update self user")
+  @Patch('me')
+  async updateSelf(@Body() updateSelfDto: UpdateSelfDto, @User() user: IUser) {
+    const updatedUser = await this.usersService.updateSelf(updateSelfDto as any, user, user._id);
+    return updatedUser;
+  }
+
+  @ResponseMessage("Change self password")
+  @Patch('me/password')
+  async changePasswordSelf(@Body() dto: ChangePasswordDto, @User() user: IUser) {
+    return this.usersService.changePasswordSelf(user._id, dto, user);
+  }
+
+  @ResponseMessage("Update a user")
+  @Patch(':id')
+  async update(@Body() updateUserDto: UpdateUserDto,
+   @User() user: IUser,
+   @Param('id') id: string) {
+    let updatedUser =  await this.usersService.update(updateUserDto, user , id);
+    return updatedUser;
+  }
   
   
   @ResponseMessage("Delete a user")

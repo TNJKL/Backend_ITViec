@@ -23,6 +23,9 @@ export class Job {
   location: string;
 
   @Prop()
+  workingModel : string;
+
+  @Prop()
   salary: number;
   
   @Prop()

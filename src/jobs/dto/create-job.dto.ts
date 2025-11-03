@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { IsArray, IsBoolean, isBoolean, IsDate, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsDate, IsIn, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from "class-validator";
 import mongoose from "mongoose";
 class Company {
     @IsNotEmpty()
@@ -28,6 +28,10 @@ export class CreateJobDto {
 
     @IsNotEmpty({message: 'Địa điểm không được để trống'})
     location: string; 
+
+    @IsNotEmpty({message: 'Mô hình làm việc không được để trống'})
+    @IsIn(['AT_OFFICE', 'REMOTE', 'HYBRID'], { message: 'workingModel phải là AT_OFFICE | REMOTE | HYBRID' })
+    workingModel: string;
 
     @IsNotEmpty({message: 'Mức lương không được để trống'})
     salary: number;

@@ -11,6 +11,8 @@ import { User} from 'src/decorator/customize';
 import aqp from 'api-query-params';
 import { USER_ROLE } from 'src/databases/sample';
 import { Role , RoleDocument } from 'src/roles/schemas/role.schema';
+import { UpdateSelfDto } from './dto/update-self.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 
 @Injectable()
@@ -27,7 +29,7 @@ export class UsersService {
   }
 
    async create(createUserDto: CreateUserDto ,  @User() user : IUser) {
-    const {name , email , password,age, gender, address, role , company} = createUserDto;
+    const {name , email , password,age, gender, address, role , company , phone} = createUserDto;
     const hashedPassword = this.getHashPassword(password);   
     const isExist = await this.userModel.findOne({email});
     if(isExist){
@@ -41,6 +43,7 @@ export class UsersService {
       gender,
       address,
       role,
+      phone,
       company,
       createdBy:{
         _id: user._id,
@@ -51,7 +54,7 @@ export class UsersService {
   } 
 
 async register(user: RegisterUserDto){
-     const {name , email , password, age, gender, address} = user;
+     const {name , email , password, age, gender, address , phone} = user;
      const hashedPassword = this.getHashPassword(password);
      const isExist = await this.userModel.findOne({email});
     if(isExist){
@@ -69,6 +72,7 @@ async register(user: RegisterUserDto){
       age,
       gender,
       address,
+      phone,
       role: userRole?._id,
     });
     
@@ -120,7 +124,8 @@ async register(user: RegisterUserDto){
         _id: id
       })
       .select("-password")
-      .populate({path: "role", select: {name: 1 , _id : 1}});
+      .populate({path: "role", select: {name: 1 , _id : 1}})
+      .populate({path: "company", select: {name: 1 , _id : 1, logo: 1}});
       //exclude >< include
 }
 
@@ -151,15 +156,49 @@ async register(user: RegisterUserDto){
       return updated;
   }
 
+
+  async updateSelf(updateUserDto: UpdateSelfDto , user: IUser , _id: string) {
+    if (!mongoose.Types.ObjectId.isValid(_id)) 
+      throw new BadRequestException(`Không tìm thấy user`);
+      const updated =  await this.userModel.updateOne(
+        {_id: _id},
+         {...updateUserDto,
+           updatedBy: {
+            _id: user._id,
+            email: user.email
+          }
+        });
+      return updated;
+  }
+
+  async changePasswordSelf(_id: string, dto: ChangePasswordDto, user: IUser) {
+    if (!mongoose.Types.ObjectId.isValid(_id)) 
+      throw new BadRequestException(`Không tìm thấy user`);
+    const found = await this.userModel.findById(_id).select('+password');
+    if (!found) {
+      throw new BadRequestException(`Không tìm thấy user`);
+    }
+    const isValid = this.isValidPassword(dto.currentPassword, (found as any).password);
+    if (!isValid) {
+      throw new BadRequestException('Mật khẩu hiện tại không đúng');
+    }
+    const hashed = this.getHashPassword(dto.newPassword);
+    await this.userModel.updateOne({ _id }, {
+      password: hashed,
+      updatedBy: { _id: user._id, email: user.email }
+    });
+    return { _id };
+  }
+
   async remove(id: string , user: IUser) {
     if(!mongoose.Types.ObjectId.isValid(id)){
       return `Không tìm thấy user`;
     }
 
-  const foundUser =  await this.userModel.findById(id);
-  if(foundUser && foundUser.email === "admin@gmail.com"){
-    throw new BadRequestException("Không thể xóa tài khoản của Admin");
-  }
+    const foundUser =  await this.userModel.findById(id);
+    if(foundUser && foundUser.email === "admin@gmail.com"){
+      throw new BadRequestException("Không thể xóa tài khoản của Admin");
+    }
 
     await this.userModel.updateOne(
       {_id: id} ,

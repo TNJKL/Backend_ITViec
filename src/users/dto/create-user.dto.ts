@@ -31,6 +31,8 @@ export class CreateUserDto {
     @IsNotEmpty({message: 'Địa chỉ không được để trống'})
     address : string;
     
+    @IsNotEmpty({message: 'Số điện thoại không được để trống'})
+    phone: string;
 
     @IsNotEmpty({message: 'Role không được để trống'})
     @IsMongoId({message: 'Role không đúng định dạng'})
@@ -60,6 +62,9 @@ export class RegisterUserDto {
     
     @IsNotEmpty({message: 'Tuổi không được để trống'})
     age : number;
+
+    @IsNotEmpty({message: 'Số điện thoại không được để trống'})
+    phone: string;
 
     @IsNotEmpty({message: 'Giới tính không được để trống'})
     gender: string;
