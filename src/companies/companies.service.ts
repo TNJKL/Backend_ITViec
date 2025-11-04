@@ -18,6 +18,8 @@ export class CompaniesService {
             address : createCompanyDto.address,
             description : createCompanyDto.description,
             logo : createCompanyDto.logo,
+            images: createCompanyDto.images ?? [],
+            maps: createCompanyDto.maps ?? [],
             createdBy : {
               _id : user._id,
               email : user.email
@@ -67,15 +69,16 @@ export class CompaniesService {
   }
 
   async update(id : string, updateCompanyDto: UpdateCompanyDto , user : IUser) {
+    const updateData: any = { ...updateCompanyDto, updatedBy: { _id: user._id, email: user.email } };
+    if (updateCompanyDto.images === undefined) {
+      delete updateData.images;
+    }
+    if (updateCompanyDto.maps === undefined) {
+      delete updateData.maps;
+    }
     return await this.companyModel.updateOne(
       { _id: id},
-        {
-        ...updateCompanyDto,
-         updatedBy:{
-          _id: user._id,
-           email: user.email
-        }
-        }
+        updateData
       )
   }
 

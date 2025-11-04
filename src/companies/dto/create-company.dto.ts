@@ -1,4 +1,4 @@
-import { IsNotEmpty } from "class-validator";
+import { IsArray, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class CreateCompanyDto {
     @IsNotEmpty({message : 'Tên công ty không được để trống'})
@@ -9,5 +9,13 @@ export class CreateCompanyDto {
     description : string;
     @IsNotEmpty({message : 'Logo không được để trống'})
     logo : string;
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
 
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  maps?: string[];
 }

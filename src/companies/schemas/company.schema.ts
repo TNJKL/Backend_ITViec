@@ -12,11 +12,23 @@ export class Company {
   @Prop()
   address: string;
 
+  @Prop({ default: 0 })
+  averageRating: number;
+
+  @Prop({ default: 0 })
+  reviewsCount: number;
+
   @Prop()
   description: string;
 
   @Prop()
   logo: string;
+
+  @Prop({ type: [String], default: [] })
+  images: string[];
+
+  @Prop({ type: [String], default: [] })
+  maps: string[];
  
   @Prop({type: Object})
   createdBy: {
