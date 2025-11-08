@@ -28,6 +28,75 @@ export class User {
   @Prop()
   phone: string;
 
+  @Prop()
+  avatar: string;
+
+  //database thêm
+  @Prop()
+  aboutMe: string;
+
+  @Prop({ type: [Object], default: [] })
+  education: {
+    school: string;
+    degree: string;
+    major: string;
+    currentlyStudying?: boolean;
+    from: Date;
+    to?: Date;
+    details?: string;
+  }[];
+
+  @Prop({ type: [Object], default: [] })
+  experience: {
+    position: string;
+    companyName: string;
+    from: Date;
+    to?: Date;
+    description?: string;
+    projects?: string;
+  }[];
+
+  @Prop({ type: Object, default: {} })
+  skills: {
+    core: string[];
+    soft: string[];
+  };
+
+  @Prop({ type: [Object], default: [] })
+  languages: {
+    name: string;
+    level: string;
+  }[];
+
+  @Prop({ type: [Object], default: [] })
+  projects: {
+    name: string;
+    from: Date;
+    to?: Date;
+    description?: string;
+    website?: string;
+  }[];
+
+  @Prop({ type: [Object], default: [] })
+  certificates: {
+    name: string;
+    organization: string;
+    from: Date;
+    to?: Date;
+    link?: string;
+    description?: string;
+  }[];
+
+  @Prop({ type: [Object], default: [] })
+  awards: {
+    name: string;
+    organization: string;
+    date: Date;
+    description?: string;
+  }[];
+
+  //database thêm
+
   @Prop({type: Object})
   company:{
     _id: mongoose.Schema.Types.ObjectId;  

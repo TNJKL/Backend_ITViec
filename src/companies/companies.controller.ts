@@ -32,6 +32,17 @@ export class CompaniesController {
   ) {
     return this.companiesService.findAll(+currentPage , + limitPage , queryString);
   }
+
+  @Get('manage')
+  @ResponseMessage("Fetch List Company with paginate (Managed)")
+  findAllManaged(
+    @Query("current") currentPage: string,
+    @Query("pageSize") limitPage : string,
+    @Query() queryString : string,
+    @User() user : IUser
+  ) {
+    return this.companiesService.findAll(+currentPage , + limitPage , queryString, user);
+  }
   
   @ResponseMessage("Get a company by id")
   @Get(':id')

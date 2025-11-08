@@ -26,6 +26,17 @@ export class JobsController {
     return this.jobsService.findAll(+currentPage, +limitPage, queryString);
   }
 
+  @Get('manage')
+  @ResponseMessage("Fetch List Job with paginate (Managed)")
+  findAllManaged(
+    @Query("current") currentPage: string,
+    @Query("pageSize") limitPage: string,
+    @Query() queryString: string,
+    @User() user: IUser
+  ) {
+    return this.jobsService.findAll(+currentPage, +limitPage, queryString, user);
+  }
+
   @ResponseMessage("Get a job by id")
   @Get(':id')
   @Public()

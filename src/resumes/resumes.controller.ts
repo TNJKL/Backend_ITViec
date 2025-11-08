@@ -34,6 +34,17 @@ export class ResumesController {
   ) {
     return this.resumesService.findAll(+currentPage, +limitPage, queryString);
   }
+
+  @Get('manage')
+  @ResponseMessage("Fetch all resumes with paginate (Managed)")
+  findAllManaged(
+    @Query("current") currentPage: string,
+    @Query("pageSize") limitPage : string,
+    @Query() queryString : string,
+    @User() user : IUser
+  ) {
+    return this.resumesService.findAll(+currentPage, +limitPage, queryString, user);
+  }
  
   @Get(':id')
   @ResponseMessage("Fetch a resume by id")

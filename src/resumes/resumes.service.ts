@@ -7,13 +7,16 @@ import mongoose, { Model, mongo } from 'mongoose';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
+import { User as UserEntity, UserDocument } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class ResumesService {
 
   constructor(
     @InjectModel(Resume.name)
-     private  resumeModel: SoftDeleteModel<ResumeDocument>
+     private  resumeModel: SoftDeleteModel<ResumeDocument>,
+    @InjectModel(UserEntity.name)
+     private  userModel: SoftDeleteModel<UserDocument>
     ) { }
 
    async create(CreateUserCvDto: CreateUserCvDto , user : IUser) {
@@ -42,12 +45,24 @@ export class ResumesService {
          }
   }
 
-  async findAll(currentPage : number ,  limitPage : number , queryString: string) {
+  async findAll(currentPage : number ,  limitPage : number , queryString: string, user?: IUser) {
     const { filter,sort,population , projection} = aqp(queryString);
     delete filter.current;
     delete filter.pageSize;
       let offset = (+currentPage - 1) * (+limitPage);
     let defaultLimit = +limitPage ? +limitPage : 10; 
+
+    // HR/EMPLOYER chỉ xem resume ứng tuyển vào công ty mình
+    const roleName = (user as any)?.role?.name;
+    if (user && (roleName === 'EMPLOYER' || roleName === 'HR')) {
+      let companyId = (user as any)?.company?._id;
+      if (!companyId && user?._id) {
+        const u = await this.userModel.findById(user._id).select('company');
+        // @ts-ignore
+        companyId = (u as any)?.company?._id;
+      }
+      filter.companyId = companyId ?? '__none__';
+    }
 
     const totalItems = (await this.resumeModel.find(filter)).length;
     const totalPages = Math.ceil(totalItems / defaultLimit);
