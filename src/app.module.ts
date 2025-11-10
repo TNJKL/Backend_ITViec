@@ -20,6 +20,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     MailModule,
     HealthModule,
     ReviewsModule,
+    DashboardModule,
     
 
   ],

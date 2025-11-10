@@ -1,9 +1,9 @@
-import { BadRequestException, Inject, Injectable, Res } from '@nestjs/common';
-import { CreateResumeDto, CreateUserCvDto } from './dto/create-resume.dto';
-import { UpdateResumeDto } from './dto/update-resume.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { CreateUserCvDto } from './dto/create-resume.dto';
+import { UpdateResumeFileDto } from './dto/update-resume-file.dto';
 import { IUser } from 'src/users/users.interface';
 import { Resume, ResumeDocument } from './schemas/resume.schema';
-import mongoose, { Model, mongo } from 'mongoose';
+import mongoose from 'mongoose';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
@@ -19,9 +19,43 @@ export class ResumesService {
      private  userModel: SoftDeleteModel<UserDocument>
     ) { }
 
+  private notDeletedCondition() {
+    return {
+      $or: [
+        { isDeleted: { $exists: false } },
+        { isDeleted: false },
+        { isDeleted: null },
+      ],
+    };
+  }
+
+  private withActiveFilter(additional?: Record<string, any>) {
+    if (!additional || Object.keys(additional).length === 0) {
+      return this.notDeletedCondition();
+    }
+    return { $and: [this.notDeletedCondition(), additional] };
+  }
+
    async create(CreateUserCvDto: CreateUserCvDto , user : IUser) {
     const {url, companyId, jobId} = CreateUserCvDto;
     const {email , _id} = user;
+
+    const existing = await this.resumeModel.findOne(this.withActiveFilter({
+      userId: _id,
+      jobId: new mongoose.Types.ObjectId(jobId as any),
+    }));
+
+    if (existing) {
+      throw new BadRequestException({
+        message: `Bạn đã ứng tuyển công việc này ngày ${existing.createdAt?.toLocaleDateString('vi-VN')}. Vui lòng chờ phản hồi hoặc cập nhật CV`,
+        code: 'ALREADY_APPLIED',
+        data: {
+          resumeId: existing._id,
+          appliedAt: existing.createdAt,
+          status: existing.status,
+        },
+      });
+    }
 
     let newResume = await this.resumeModel.create({
       url, companyId , jobId,email,
@@ -154,8 +188,74 @@ export class ResumesService {
           select: { name: 1 }
         }
       ]);
-}
+ }
 
+ async updateFile(id: string, payload: UpdateResumeFileDto, user: IUser) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new BadRequestException("Not found resume");
+  }
+
+  const resume = await this.resumeModel.findOne(this.withActiveFilter({
+    _id: new mongoose.Types.ObjectId(id),
+    userId: user._id,
+  }));
+
+  if (!resume) {
+    throw new BadRequestException("Không tìm thấy hồ sơ ứng tuyển để cập nhật");
+  }
+
+  resume.url = payload.url;
+  resume.updatedBy = {
+    _id: new mongoose.Types.ObjectId(user._id as any),
+    email: user.email,
+  } as any;
+  const newHistoryEntry = {
+    status: resume.status,
+    updatedAt: new Date(),
+    updatedBy: {
+      _id: new mongoose.Types.ObjectId(user._id as any),
+      email: user.email,
+    },
+  };
+  resume.history = [
+    ...(resume.history ?? []),
+    newHistoryEntry as any,
+  ];
+
+  await resume.save();
+
+  return {
+    _id: resume._id,
+    url: resume.url,
+    updatedAt: resume.updatedAt,
+    status: resume.status,
+  };
+ }
+
+ async checkApplied(jobId: string, user: IUser) {
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    throw new BadRequestException("JobId không hợp lệ");
+  }
+
+  const resume = await this.resumeModel.findOne(this.withActiveFilter({
+    userId: user._id,
+    jobId: new mongoose.Types.ObjectId(jobId),
+  }));
+
+  if (!resume) {
+    return {
+      applied: false,
+    };
+  }
+
+  return {
+    applied: true,
+    resumeId: resume._id,
+    appliedAt: resume.createdAt,
+    status: resume.status,
+    url: resume.url,
+  };
+ }
 
 
 }

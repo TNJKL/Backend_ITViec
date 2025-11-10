@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ResumesService } from './resumes.service';
-import { CreateResumeDto, CreateUserCvDto } from './dto/create-resume.dto';
-import { UpdateResumeDto } from './dto/update-resume.dto';
+import { CreateUserCvDto } from './dto/create-resume.dto';
+import { UpdateResumeFileDto } from './dto/update-resume-file.dto';
 import { ResponseMessage, User } from 'src/decorator/customize';
 import { IUser } from 'src/users/users.interface';
 import { ApiTags } from '@nestjs/swagger';
@@ -18,6 +18,12 @@ export class ResumesController {
     return this.resumesService.create(CreateUserCvDto, user);
   }
   
+
+  @Get('job/:jobId/check')
+  @ResponseMessage("Check resume applied status")
+  checkApplied(@Param('jobId') jobId: string, @User() user: IUser) {
+    return this.resumesService.checkApplied(jobId, user);
+  }
 
   @Post('by-user')
   @ResponseMessage("Fetch resumes  by user")
@@ -56,6 +62,16 @@ export class ResumesController {
   @ResponseMessage("Update a resume status")
   updateStatus(@Param('id') id: string, @Body("status") status: string, @User() user : IUser) {
     return this.resumesService.update(id, status, user);
+  }
+
+  @Patch(':id/file')
+  @ResponseMessage("Update resume file")
+  updateFile(
+    @Param('id') id: string,
+    @Body() body: UpdateResumeFileDto,
+    @User() user: IUser
+  ) {
+    return this.resumesService.updateFile(id, body, user);
   }
 
   @Delete(':id')

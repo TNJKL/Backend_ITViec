@@ -32,7 +32,7 @@ export class MailController {
   @Public()
   @ResponseMessage("Test email")
   // @Cron("0 10 0 * * 0") //
-  //@Cron(CronExpression. EVERY_MINUTE) 
+   //@Cron(CronExpression. EVERY_MINUTE) 
   async handleTestEmail() {
     const subscribers = await this.subscriberModel.find({});
     for (const subs of subscribers) {
