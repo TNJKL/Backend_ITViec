@@ -8,6 +8,7 @@ import { IUser } from 'src/users/users.interface';
 import { RolesService } from 'src/roles/roles.service';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { SendOtpDto, VerifyOtpRegisterDto } from './dto/otp-register.dto';
 
 
 @ApiTags('auth')
@@ -43,6 +44,22 @@ export class AuthController {
     @Post('register')
     register(@Body() registerUserDto : RegisterUserDto){
       return this.authService.register(registerUserDto);
+    }
+
+    @Public()
+    @ResponseMessage("Gửi OTP đăng ký")
+    @Post('register/otp')
+    @ApiBody({ type: SendOtpDto })
+    sendRegisterOtp(@Body() dto: SendOtpDto) {
+      return this.authService.sendRegisterOtp(dto);
+    }
+
+    @Public()
+    @ResponseMessage("Xác thực OTP và đăng ký")
+    @Post('register/verify')
+    @ApiBody({ type: VerifyOtpRegisterDto })
+    verifyRegisterOtp(@Body() dto: VerifyOtpRegisterDto) {
+      return this.authService.verifyRegisterOtp(dto);
     }
 
 

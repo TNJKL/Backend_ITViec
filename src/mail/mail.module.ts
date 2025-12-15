@@ -18,11 +18,15 @@ import { Job, JobSchema } from 'src/jobs/schemas/job.schema';
       useFactory: async (configService: ConfigService) => ({
         transport: {
           host: configService.get<string>('EMAIL_HOST'),
+          port: parseInt(configService.get<string>('EMAIL_PORT') || '587'),
           secure: false,
           auth: {
              user: configService.get<string>('EMAIL_AUTH_USER'),
              pass: configService.get<string>('EMAIL_AUTH_PASS'),
           },
+        },
+        defaults: {
+          from: `"ITViec" <${configService.get<string>('EMAIL_AUTH_USER')}>`,
         },
 
         template: {

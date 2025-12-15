@@ -5,6 +5,7 @@ import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { Permission, PermissionDocument } from 'src/permissions/schemas/permission.schema';
 import { Role, RoleDocument } from 'src/roles/schemas/role.schema';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
+import { ServicePackage, ServicePackageDocument } from 'src/service-packages/schemas/service-package.schema';
 import { UsersService } from 'src/users/users.service';
 import { ADMIN_ROLE, INIT_PERMISSIONS, USER_ROLE } from './sample';
 import { Logger } from '@nestjs/common';
@@ -15,6 +16,7 @@ export class DatabasesService implements OnModuleInit {
       @InjectModel(User.name) private userModel: SoftDeleteModel<UserDocument>,
       @InjectModel(Permission.name) private permissionModel: SoftDeleteModel<PermissionDocument>,
       @InjectModel(Role.name) private roleModel: SoftDeleteModel<RoleDocument>,
+      @InjectModel(ServicePackage.name) private servicePackageModel: SoftDeleteModel<ServicePackageDocument>,
 
       private configService: ConfigService,
       private usersService: UsersService,
@@ -32,6 +34,7 @@ export class DatabasesService implements OnModuleInit {
          const countUser = await this.userModel.count({});
          const countPermission = await this.permissionModel.count({});
          const countRole = await this.roleModel.count({});
+         const countServicePackage = await this.servicePackageModel.count({});
          
          //create permissons
          if(countPermission === 0) { 
@@ -54,6 +57,46 @@ export class DatabasesService implements OnModuleInit {
                      permissions : []
                   }
                 ]);
+         }
+
+         //create service packages
+         if(countServicePackage === 0) {
+            await this.servicePackageModel.insertMany([
+               {
+                  name: 'Basic',
+                  price: 0,
+                  maxJobs: 1,
+                  durationDays: 7,
+                  isActive: true,
+                  createdBy: {
+                     _id: new (require('mongoose').Types.ObjectId)(),
+                     email: 'system@itviec.com'
+                  }
+               },
+               {
+                  name: 'Pro',
+                  price: 500000,
+                  maxJobs: 3,
+                  durationDays: 30,
+                  isActive: true,
+                  createdBy: {
+                     _id: new (require('mongoose').Types.ObjectId)(),
+                     email: 'system@itviec.com'
+                  }
+               },
+               {
+                  name: 'Premium',
+                  price: 1000000,
+                  maxJobs: 10,
+                  durationDays: 30,
+                  isActive: true,
+                  createdBy: {
+                     _id: new (require('mongoose').Types.ObjectId)(),
+                     email: 'system@itviec.com'
+                  }
+               }
+            ]);
+            this.logger.log('Service packages initialized.');
          }
 
          if(countUser === 0){

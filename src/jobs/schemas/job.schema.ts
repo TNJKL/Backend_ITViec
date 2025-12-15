@@ -27,9 +27,6 @@ export class Job {
 
   @Prop()
   salary: number;
-  
-  @Prop()
-  quantity: number;
 
   @Prop()
   level: string;
@@ -46,6 +43,14 @@ export class Job {
   @Prop()
   isActive: boolean;
 
+  @Prop({ default: 'published', enum: ['published', 'expired'] })
+  status: string; // "published" | "expired"
+
+  @Prop()
+  tag: string; // "New", "Hot", "Super Hot"
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'UserPackage' })
+  userPackageId?: mongoose.Schema.Types.ObjectId;
 
   @Prop({type: Object})
     createdBy: {

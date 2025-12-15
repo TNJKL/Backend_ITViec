@@ -8,6 +8,10 @@ import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import aqp from 'api-query-params';
 import { User as UserEntity, UserDocument } from 'src/users/schemas/user.schema';
+import {
+  RESUME_STATUS,
+  VALID_STATUS_TRANSITIONS,
+} from 'src/common/constants/resume-status.constant';
 
 @Injectable()
 export class ResumesService {
@@ -128,32 +132,75 @@ export class ResumesService {
     return await this.resumeModel.findById(id);
   }
 
-  async update(id: string, status: string , user : IUser) {
-    if(!mongoose.Types.ObjectId.isValid(id)){
-      throw new BadRequestException("Not found resume");
-  }
-        const updatedResume =  await this.resumeModel.updateOne(
-          {_id : id},
-         {
-          status : status,
-          updatedBy : {
-            _id: user._id,
-            email : user.email
-          },
-          $push:{
-            history : {
-              status : status,
-              updatedAt : new Date,
-              updatedBy: {
-                _id: user._id,
-                email : user.email
-              }
-            }
-          }
-         });
+  async update(id: string, status: string, user: IUser) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Not found resume');
+    }
 
-         return updatedResume;
-}
+    // Kiểm tra Resume tồn tại
+    const resume = await this.resumeModel.findOne(
+      this.withActiveFilter({
+        _id: new mongoose.Types.ObjectId(id),
+      }),
+    );
+
+    if (!resume) {
+      throw new BadRequestException('Không tìm thấy hồ sơ ứng tuyển');
+    }
+
+    // Kiểm tra status hợp lệ
+    if (!Object.values(RESUME_STATUS).includes(status as any)) {
+      throw new BadRequestException(
+        `Status không hợp lệ. Các status hợp lệ: ${Object.values(RESUME_STATUS).join(', ')}`,
+      );
+    }
+
+    // Kiểm tra quyền: chỉ HR/EMPLOYER mới được cập nhật status
+    const roleName = (user as any)?.role?.name;
+    if (roleName !== 'HR' && roleName !== 'EMPLOYER' && roleName !== 'ADMIN') {
+      throw new BadRequestException('Bạn không có quyền cập nhật status của hồ sơ');
+    }
+
+    // Kiểm tra luồng chuyển đổi status hợp lệ (nếu có)
+    const currentStatus = resume.status;
+    const validTransitions = VALID_STATUS_TRANSITIONS[currentStatus] || [];
+    
+    // Cho phép chuyển đổi nếu:
+    // 1. Status mới nằm trong danh sách valid transitions
+    // 2. Hoặc status hiện tại chưa được định nghĩa trong transitions (backward compatibility)
+    if (
+      validTransitions.length > 0 &&
+      !validTransitions.includes(status) &&
+      currentStatus !== status
+    ) {
+      throw new BadRequestException(
+        `Không thể chuyển từ status "${currentStatus}" sang "${status}". Các status hợp lệ: ${validTransitions.join(', ')}`,
+      );
+    }
+
+    const updatedResume = await this.resumeModel.updateOne(
+      { _id: id },
+      {
+        status: status,
+        updatedBy: {
+          _id: user._id,
+          email: user.email,
+        },
+        $push: {
+          history: {
+            status: status,
+            updatedAt: new Date(),
+            updatedBy: {
+              _id: user._id,
+              email: user.email,
+            },
+          },
+        },
+      },
+    );
+
+    return updatedResume;
+  }
 
   async remove(id: string, user: IUser) {
     if (!mongoose.Types.ObjectId.isValid(id)) {

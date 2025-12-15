@@ -12,13 +12,22 @@ import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 import { Response } from 'express';
 import { RolesService } from 'src/roles/roles.service';
+import { MailerService } from '@nestjs-modules/mailer';
+import { SendOtpDto, VerifyOtpRegisterDto } from './dto/otp-register.dto';
+
+interface OtpRecord {
+  code: string;
+  expiresAt: number;
+}
 @Injectable()
 export class AuthService {
+    private otpStore = new Map<string, OtpRecord>(); // email -> otp data
     constructor(
       private usersService: UsersService, 
       private configService: ConfigService,
       private jwtService : JwtService,
       private rolesService : RolesService,
+      private mailerService: MailerService,
       @InjectModel(User.name) private userModel: SoftDeleteModel<UserDocument>
     ){}
 
@@ -86,6 +95,55 @@ export class AuthService {
         createdAt: newUser?.createdAt,
      }
     }
+
+  private generateOtp() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async sendRegisterOtp(dto: SendOtpDto) {
+    const email = dto.email.toLowerCase();
+    const isExist = await this.usersService.findOneByUsername(email);
+    if (isExist) {
+      throw new BadRequestException(`Email: ${email} đã tồn tại , vui lòng chọn email khác`);
+    }
+    const code = this.generateOtp();
+    const expiresAt = Date.now() + ms('10m');
+    this.otpStore.set(email, { code, expiresAt });
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Mã OTP đăng ký tài khoản',
+        template: 'otp-register',
+        context: { otpCode: code, email },
+        text: `Mã OTP của bạn là ${code}. Mã có hiệu lực trong 10 phút.`,
+      });
+    } catch (e) {
+      console.error('Lỗi gửi email OTP', e);
+      throw new BadRequestException('Không gửi được email OTP, vui lòng thử lại.');
+    }
+    return { email, expiresIn: '10m' };
+  }
+
+  async verifyRegisterOtp(dto: VerifyOtpRegisterDto) {
+    const email = dto.email.toLowerCase();
+    const record = this.otpStore.get(email);
+    if (!record) throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn');
+    if (Date.now() > record.expiresAt) {
+      this.otpStore.delete(email);
+      throw new BadRequestException('OTP đã hết hạn');
+    }
+    if (record.code !== dto.otp) throw new BadRequestException('OTP không đúng');
+    this.otpStore.delete(email);
+    return this.register({
+      name: dto.name,
+      email,
+      password: dto.password,
+      age: dto.age,
+      phone: dto.phone,
+      gender: dto.gender,
+      address: dto.address,
+    });
+  }
     
   //tao refresh token
   createRefreshToken = (payload: any)=>{

@@ -11,11 +11,13 @@ import ms from 'ms';
 import { AuthController } from './auth.controller';
 import { RolesService } from 'src/roles/roles.service';
 import { RolesModule } from 'src/roles/roles.module';
+import { MailerModule } from '@nestjs-modules/mailer';
 @Module({
   imports :[
     UsersModule,
     PassportModule,
     RolesModule,
+    MailerModule,
     JwtModule.registerAsync({
   imports: [ConfigModule],
   useFactory: async (configService: ConfigService) => ({

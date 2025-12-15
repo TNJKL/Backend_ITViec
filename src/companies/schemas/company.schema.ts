@@ -19,6 +19,9 @@ export class Company {
   reviewsCount: number;
 
   @Prop()
+  website: string;
+
+  @Prop()
   description: string;
 
   @Prop()

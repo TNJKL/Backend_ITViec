@@ -21,6 +21,12 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ServicePackagesModule } from './service-packages/service-packages.module';
+import { UserPackagesModule } from './user-packages/user-packages.module';
+import { PaymentsModule } from './payments/payments.module';
+import { InterviewsModule } from './interviews/interviews.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { EmployerApplicationsModule } from './employer-applications/employer-applications.module';
 
 @Module({
   imports: [
@@ -59,7 +65,12 @@ import { DashboardModule } from './dashboard/dashboard.module';
     HealthModule,
     ReviewsModule,
     DashboardModule,
-    
+    ServicePackagesModule,
+    UserPackagesModule,
+    PaymentsModule,
+    InterviewsModule,
+    NotificationsModule,
+    EmployerApplicationsModule,
 
   ],
   controllers: [AppController],

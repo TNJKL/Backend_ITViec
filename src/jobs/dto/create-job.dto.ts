@@ -1,6 +1,7 @@
 import { Transform, Type } from "class-transformer";
-import { IsArray, IsBoolean, IsDate, IsIn, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsDate, IsIn, IsMongoId, IsNotEmpty, IsNotEmptyObject, IsObject, IsOptional, IsString, ValidateNested } from "class-validator";
 import mongoose from "mongoose";
+import { JOB_TAGS } from "src/common/constants/job-tags.constant";
 class Company {
     @IsNotEmpty()
     _id: mongoose.Schema.Types.ObjectId;
@@ -36,9 +37,6 @@ export class CreateJobDto {
     @IsNotEmpty({message: 'Mức lương không được để trống'})
     salary: number;
 
-    @IsNotEmpty({message: 'Số lượng không được để trống'})
-    quantity: number;
-
     @IsNotEmpty({message: 'Cấp bậc không được để trống'})
     level: string;
 
@@ -61,6 +59,13 @@ export class CreateJobDto {
     @IsBoolean({message: 'Trạng thái phải đúng định dạng Boolean'})
     isActive: boolean;
 
-    
+    @IsOptional()
+    @IsString({message: 'Tag phải là một chuỗi'})
+    @IsIn(JOB_TAGS, { message: `Tag phải nằm trong: ${JOB_TAGS.join(', ')}` })
+    tag?: string;
+
+    @IsOptional()
+    @IsMongoId({ message: 'userPackageId không hợp lệ' })
+    userPackageId?: string;
 
 }
