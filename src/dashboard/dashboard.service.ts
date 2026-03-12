@@ -6,6 +6,8 @@ import { Role, RoleDocument } from 'src/roles/schemas/role.schema';
 import { Job, JobDocument } from 'src/jobs/schemas/job.schema';
 import { Resume, ResumeDocument } from 'src/resumes/schemas/resume.schema';
 import { Company, CompanyDocument } from 'src/companies/schemas/company.schema';
+import { ServicePackage, ServicePackageDocument } from 'src/service-packages/schemas/service-package.schema';
+import { UserPackage, UserPackageDocument } from 'src/user-packages/schemas/user-package.schema';
 
 interface RoleCount {
   roleId?: string;
@@ -21,6 +23,8 @@ export class DashboardService {
     @InjectModel(Job.name) private readonly jobModel: SoftDeleteModel<JobDocument>,
     @InjectModel(Resume.name) private readonly resumeModel: SoftDeleteModel<ResumeDocument>,
     @InjectModel(Company.name) private readonly companyModel: SoftDeleteModel<CompanyDocument>,
+    @InjectModel(ServicePackage.name) private readonly servicePackageModel: SoftDeleteModel<ServicePackageDocument>,
+    @InjectModel(UserPackage.name) private readonly userPackageModel: SoftDeleteModel<UserPackageDocument>,
   ) {}
 
   private notDeletedCondition() {
@@ -479,6 +483,211 @@ export class DashboardService {
     return res?.[0]?.count || 0;
   }
 
+  private async getServicePackagesStats() {
+    // Tổng số gói dịch vụ
+    const totalPackages = await this.servicePackageModel.countDocuments(this.notDeletedCondition());
+    
+    // Tính tổng doanh thu từ các UserPackage đã mua
+    const revenuePipeline = [
+      {
+        $match: this.notDeletedCondition(),
+      },
+      {
+        $lookup: {
+          from: this.servicePackageModel.collection.name,
+          localField: 'packageId',
+          foreignField: '_id',
+          as: 'package',
+        },
+      },
+      {
+        $unwind: {
+          path: '$package',
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$package.price' },
+          totalSold: { $sum: 1 },
+        },
+      },
+    ];
+
+    const revenueResult = await this.userPackageModel.aggregate(revenuePipeline);
+    const totalRevenue = revenueResult?.[0]?.totalRevenue || 0;
+    const totalSold = revenueResult?.[0]?.totalSold || 0;
+
+    return {
+      totalPackages,
+      totalRevenue,
+      totalSold,
+    };
+  }
+
+  private async getRevenueByPackage() {
+    // Doanh thu theo từng gói dịch vụ
+    const pipeline = [
+      {
+        $match: this.notDeletedCondition(),
+      },
+      {
+        $lookup: {
+          from: this.servicePackageModel.collection.name,
+          localField: 'packageId',
+          foreignField: '_id',
+          as: 'package',
+        },
+      },
+      {
+        $unwind: {
+          path: '$package',
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $group: {
+          _id: '$packageId',
+          packageName: { $first: '$package.name' },
+          packagePrice: { $first: '$package.price' },
+          totalSold: { $sum: 1 },
+          totalRevenue: { $sum: '$package.price' },
+        },
+      },
+      {
+        $sort: { totalRevenue: -1 },
+      },
+    ];
+
+    return this.userPackageModel.aggregate(pipeline as any[]);
+  }
+
+  private async getRevenueTrend(months: number) {
+    // Doanh thu theo thời gian (tháng)
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+
+    const pipeline = [
+      {
+        $match: this.withNotDeleted({
+          createdAt: { $gte: start },
+        }),
+      },
+      {
+        $lookup: {
+          from: this.servicePackageModel.collection.name,
+          localField: 'packageId',
+          foreignField: '_id',
+          as: 'package',
+        },
+      },
+      {
+        $unwind: {
+          path: '$package',
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m',
+              date: '$createdAt',
+            },
+          },
+          revenue: { $sum: '$package.price' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ];
+
+    const raw = await this.userPackageModel.aggregate<{ _id: string; revenue: number; count: number }>(pipeline as any[]);
+    const map = new Map<string, { revenue: number; count: number }>();
+    raw.forEach((item) => map.set(item._id, { revenue: item.revenue, count: item.count }));
+
+    const data: { month: string; revenue: number; count: number }[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
+      const item = map.get(key) || { revenue: 0, count: 0 };
+      data.push({
+        month: key,
+        revenue: item.revenue,
+        count: item.count,
+      });
+    }
+
+    return data;
+  }
+
+  private async getRecentSales(limit: number = 10) {
+    // Danh sách các giao dịch gần đây
+    const pipeline = [
+      {
+        $match: this.notDeletedCondition(),
+      },
+      {
+        $lookup: {
+          from: this.servicePackageModel.collection.name,
+          localField: 'packageId',
+          foreignField: '_id',
+          as: 'package',
+        },
+      },
+      {
+        $unwind: {
+          path: '$package',
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $lookup: {
+          from: this.userModel.collection.name,
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          packageName: '$package.name',
+          packagePrice: '$package.price',
+          packageMaxJobs: '$package.maxJobs',
+          packageDurationDays: '$package.durationDays',
+          userName: {
+            $ifNull: ['$user.name', '$user.email'],
+          },
+          userEmail: '$user.email',
+          userCompany: '$user.company.name',
+          startDate: 1,
+          endDate: 1,
+          usedJobs: 1,
+          isActive: 1,
+          createdAt: 1,
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $limit: limit,
+      },
+    ];
+
+    return this.userPackageModel.aggregate(pipeline as any[]);
+  }
+
   async getOverview() {
     const now = new Date();
     const startOfDay = new Date(now);
@@ -499,6 +708,10 @@ export class DashboardService {
       topCandidates,
       topHRs,
       uniqueApplicantsThisMonth,
+      servicePackagesStats,
+      revenueByPackage,
+      revenueTrend,
+      recentSales,
     ] = await Promise.all([
       this.userModel.countDocuments(this.notDeletedCondition()),
       this.jobModel.countDocuments(this.notDeletedCondition()),
@@ -513,6 +726,10 @@ export class DashboardService {
       this.getTopCandidates(),
       this.getTopHRs(),
       this.getUniqueApplicantsInMonth(startOfMonth),
+      this.getServicePackagesStats(),
+      this.getRevenueByPackage(),
+      this.getRevenueTrend(6),
+      this.getRecentSales(20),
     ]);
 
     const userSummary = this.extractRoleCounts(roleCounts);
@@ -534,14 +751,24 @@ export class DashboardService {
           uniqueApplicantsThisMonth,
         },
         companies: totalCompanies,
+        servicePackages: {
+          total: servicePackagesStats.totalPackages,
+          totalSold: servicePackagesStats.totalSold,
+          totalRevenue: servicePackagesStats.totalRevenue,
+        },
       },
       trends: {
         applicationsLast7Days: applicationsTrend,
         jobsLast6Months: jobsTrend,
+        revenueLast6Months: revenueTrend,
       },
       leaderboards: {
         topCandidates,
         topHRs,
+      },
+      revenue: {
+        byPackage: revenueByPackage,
+        recentSales,
       },
     };
   }

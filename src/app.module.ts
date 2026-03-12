@@ -26,6 +26,7 @@ import { UserPackagesModule } from './user-packages/user-packages.module';
 import { PaymentsModule } from './payments/payments.module';
 import { InterviewsModule } from './interviews/interviews.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ForumModule } from './forum/forum.module';
 import { EmployerApplicationsModule } from './employer-applications/employer-applications.module';
 
 @Module({
@@ -70,6 +71,7 @@ import { EmployerApplicationsModule } from './employer-applications/employer-app
     PaymentsModule,
     InterviewsModule,
     NotificationsModule,
+    ForumModule,
     EmployerApplicationsModule,
 
   ],

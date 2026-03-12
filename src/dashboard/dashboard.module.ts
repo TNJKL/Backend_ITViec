@@ -7,6 +7,8 @@ import { Role, RoleSchema } from 'src/roles/schemas/role.schema';
 import { Job, JobSchema } from 'src/jobs/schemas/job.schema';
 import { Resume, ResumeSchema } from 'src/resumes/schemas/resume.schema';
 import { Company, CompanySchema } from 'src/companies/schemas/company.schema';
+import { ServicePackage, ServicePackageSchema } from 'src/service-packages/schemas/service-package.schema';
+import { UserPackage, UserPackageSchema } from 'src/user-packages/schemas/user-package.schema';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { Company, CompanySchema } from 'src/companies/schemas/company.schema';
       { name: Job.name, schema: JobSchema },
       { name: Resume.name, schema: ResumeSchema },
       { name: Company.name, schema: CompanySchema },
+      { name: ServicePackage.name, schema: ServicePackageSchema },
+      { name: UserPackage.name, schema: UserPackageSchema },
     ]),
   ],
   controllers: [DashboardController],
